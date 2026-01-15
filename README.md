@@ -1,73 +1,36 @@
-# Welcome to your Lovable project
+🚧 ROAD-GUARDIAN
+AIAG05 – Agentic AI–Enabled Pothole Repair Accountability System
+📌 Problem Statement
+Cities receive repeated pothole complaints because citizens cannot track repair progress and contractors are not accountable for delays or poor-quality work. This leads to unsafe roads, duplicate work orders, and loss of public trust.
 
-## Project info
+💡 Solution
+ROAD-GUARDIAN is an Agentic AI system that tracks potholes from detection to closure, monitors repair timelines, scores contractor performance, and provides transparent status updates for citizens and authorities.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+🤖 Agent Workflow
+Detection Agent: Registers and de-duplicates pothole reports
 
-## How can I edit this code?
+Lifecycle Agent: Tracks repair stages end-to-end
 
-There are several ways of editing your application.
+Performance Agent: Scores contractors based on SLA and quality
 
-**Use Lovable**
+Alert Agent: Flags delays and repeat failures
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+Transparency Agent: Publishes repair timelines
 
-Changes made via Lovable will be committed automatically to this repo.
+🛠️ Tech Stack
+Lovable AI
 
-**Use your preferred IDE**
+Agentic AI (Prompt-driven, no-code)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Real-world data simulation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+▶️ Execution
+Paste the master Agentic AI prompt into Lovable AI and provide pothole details. The system autonomously tracks lifecycle, accountability, and alerts.
 
-Follow these steps:
+🔗 Links
+Prototype: https://sushmitha.lovable.app
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+GitHub: https://github.com/sushdot/sushmitha
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Demo Video: https://drive.google.com/drive/folders/1qao-PuJ67lgDSLdFr5ocO4SAdM3sepX5?usp=drive_link
+[Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

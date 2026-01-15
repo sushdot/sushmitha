@@ -1,30 +1,35 @@
 import { useState } from 'react';
 import { Header } from '@/components/Header';
 import { MetricCard } from '@/components/MetricCard';
+import { ProjectSelector } from '@/components/ProjectSelector';
 import { PotholeForm } from '@/components/PotholeForm';
+import { SupplierForm } from '@/components/SupplierForm';
 import { AgentCard } from '@/components/AgentCard';
 import { PotholeTable } from '@/components/PotholeTable';
+import { SupplierTable } from '@/components/SupplierTable';
 import { ContractorScorecard } from '@/components/ContractorScorecard';
+import { SupplierScorecard } from '@/components/SupplierScorecard';
 import { Timeline } from '@/components/Timeline';
 import { AlertPanel } from '@/components/AlertPanel';
-import { analyzeWithROADGUARDIAN } from '@/lib/roadGuardianEngine';
-import { Pothole, AgentAnalysis, TimelineEvent, Alert, ContractorScore } from '@/types/pothole';
+import { analyzeWithRoadGuardian, analyzeWithPhantomX } from '@/lib/bharatGuardianEngine';
 import { 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
-  Construction,
-  Shield,
-  TrendingUp
+  ProjectType, Pothole, Supplier, AgentAnalysis, TimelineEvent, Alert, 
+  ContractorScore, SupplierScore, INDIAN_STATES, INDIAN_CITIES, INDIAN_CONTRACTORS 
+} from '@/types/bharatGuardian';
+import { 
+  AlertTriangle, CheckCircle, Clock, Construction, Shield, TrendingUp,
+  Package, Factory, MapPin
 } from 'lucide-react';
 
-// Demo data for initial display
+// Demo data
 const initialPotholes: Pothole[] = [
   {
-    id: 'PH-2024-142',
-    location: 'Main Street & 5th Ave',
+    id: 'PH-MH-MUM-0142',
+    location: 'Western Express Highway, Andheri',
+    city: 'Mumbai',
+    state: 'Maharashtra',
     dateReported: new Date('2024-01-10'),
-    contractor: 'Metro Roads Ltd.',
+    contractor: 'Larsen & Toubro Infrastructure',
     expectedSLA: 7,
     status: 'in_progress',
     previousRepairs: false,
@@ -32,10 +37,12 @@ const initialPotholes: Pothole[] = [
     slaStatus: 'on_track'
   },
   {
-    id: 'PH-2024-138',
-    location: 'Oak Boulevard North',
+    id: 'PH-KA-BLR-0089',
+    location: 'Outer Ring Road, Marathahalli',
+    city: 'Bengaluru',
+    state: 'Karnataka',
     dateReported: new Date('2024-01-08'),
-    contractor: 'RoadWorks Pro Inc.',
+    contractor: 'NHAI Road Works Division',
     expectedSLA: 7,
     status: 'repaired',
     previousRepairs: true,
@@ -44,10 +51,12 @@ const initialPotholes: Pothole[] = [
     slaStatus: 'on_track'
   },
   {
-    id: 'PH-2024-155',
-    location: 'Industrial Park Rd',
+    id: 'PH-DL-NDL-0201',
+    location: 'Ring Road, ITO Junction',
+    city: 'New Delhi',
+    state: 'Delhi',
     dateReported: new Date('2024-01-02'),
-    contractor: 'QuickFix Contractors',
+    contractor: 'Municipal Corporation Works',
     expectedSLA: 7,
     status: 'assigned',
     previousRepairs: false,
@@ -56,42 +65,87 @@ const initialPotholes: Pothole[] = [
   }
 ];
 
-const initialContractors: ContractorScore[] = [
-  { name: 'Metro Roads Ltd.', score: 91, avgResponseTime: 12, avgCompletionTime: 3, repeatOccurrence: 3, totalAssigned: 203, completed: 198 },
-  { name: 'RoadWorks Pro Inc.', score: 87, avgResponseTime: 18, avgCompletionTime: 4, repeatOccurrence: 5, totalAssigned: 145, completed: 138 },
-  { name: 'QuickFix Contractors', score: 54, avgResponseTime: 48, avgCompletionTime: 8, repeatOccurrence: 22, totalAssigned: 67, completed: 45 },
+const initialSuppliers: Supplier[] = [
+  {
+    id: 'SUP-MH-0001',
+    name: 'Tata Steel Ltd.',
+    tier: 'tier_1',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    reportedStock: 50000,
+    actualStock: 48500,
+    phantomStockPercentage: 3,
+    productionCapacity: 5000,
+    currentUtilization: 82,
+    leadTimeDays: 5,
+    status: 'active',
+    lastAuditDate: new Date('2024-01-05'),
+    disruptionRisk: 'low',
+    regionalFactors: []
+  },
+  {
+    id: 'SUP-GJ-0015',
+    name: 'Vedanta Aluminium',
+    tier: 'tier_2',
+    city: 'Ahmedabad',
+    state: 'Gujarat',
+    reportedStock: 25000,
+    actualStock: 18000,
+    phantomStockPercentage: 28,
+    productionCapacity: 2000,
+    currentUtilization: 96,
+    leadTimeDays: 12,
+    status: 'at_risk',
+    lastAuditDate: new Date('2024-01-08'),
+    disruptionRisk: 'critical',
+    regionalFactors: ['logistics_delay', 'power_shortage']
+  }
 ];
 
 export default function Index() {
+  const [selectedProject, setSelectedProject] = useState<ProjectType>('road_guardian');
   const [potholes, setPotholes] = useState<Pothole[]>(initialPotholes);
-  const [contractors] = useState<ContractorScore[]>(initialContractors);
+  const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers);
   const [agentAnalyses, setAgentAnalyses] = useState<AgentAnalysis[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [analyzedPothole, setAnalyzedPothole] = useState<Pothole | null>(null);
   const [lastContractorScore, setLastContractorScore] = useState<ContractorScore | null>(null);
+  const [lastSupplierScore, setLastSupplierScore] = useState<SupplierScore | null>(null);
+  const [analyzedEntity, setAnalyzedEntity] = useState<string | null>(null);
 
-  const handleFormSubmit = (formData: any) => {
-    const result = analyzeWithROADGUARDIAN(formData, potholes);
-    
-    // Update state with analysis results
+  const handleRoadFormSubmit = (formData: any) => {
+    const result = analyzeWithRoadGuardian(formData, potholes);
     setAgentAnalyses(result.agentAnalyses);
     setTimeline(result.timeline);
     setAlerts(result.alerts);
-    setAnalyzedPothole(result.pothole);
     setLastContractorScore(result.contractorScore);
-    
-    // Add to potholes list if new
+    setAnalyzedEntity(result.pothole.id);
     if (!potholes.find(p => p.id === result.pothole.id)) {
       setPotholes([result.pothole, ...potholes]);
     }
   };
 
-  // Calculate metrics
-  const totalPotholes = potholes.length;
-  const repairedCount = potholes.filter(p => p.status === 'repaired' || p.status === 'closed').length;
-  const breachedCount = potholes.filter(p => p.slaStatus === 'breached').length;
-  const avgDaysOpen = Math.round(potholes.reduce((sum, p) => sum + p.daysOpen, 0) / totalPotholes);
+  const handleSupplierFormSubmit = (formData: any) => {
+    const result = analyzeWithPhantomX(formData, suppliers);
+    setAgentAnalyses(result.agentAnalyses);
+    setTimeline(result.timeline);
+    setAlerts(result.alerts);
+    setLastSupplierScore(result.supplierScore);
+    setAnalyzedEntity(result.supplier.id);
+    if (!suppliers.find(s => s.id === result.supplier.id)) {
+      setSuppliers([result.supplier, ...suppliers]);
+    }
+  };
+
+  // Metrics based on selected project
+  const isRoad = selectedProject === 'road_guardian';
+  const totalEntities = isRoad ? potholes.length : suppliers.length;
+  const completedCount = isRoad 
+    ? potholes.filter(p => p.status === 'repaired' || p.status === 'closed').length
+    : suppliers.filter(s => s.status === 'active').length;
+  const criticalCount = isRoad 
+    ? potholes.filter(p => p.slaStatus === 'breached').length
+    : suppliers.filter(s => s.disruptionRisk === 'critical' || s.disruptionRisk === 'high').length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -101,43 +155,47 @@ export default function Index() {
         {/* Metrics Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <MetricCard
-            title="Active Potholes"
-            value={totalPotholes}
-            subtitle="Tracked in system"
-            icon={Construction}
+            title={isRoad ? "Active Potholes" : "Tracked Suppliers"}
+            value={totalEntities}
+            subtitle="Across India"
+            icon={isRoad ? Construction : Factory}
             variant="default"
           />
           <MetricCard
-            title="Repairs Completed"
-            value={repairedCount}
-            subtitle={`${Math.round((repairedCount / totalPotholes) * 100)}% success rate`}
+            title={isRoad ? "Repairs Completed" : "Active Suppliers"}
+            value={completedCount}
+            subtitle={`${Math.round((completedCount / totalEntities) * 100)}% healthy`}
             icon={CheckCircle}
             trend={{ value: 12, isPositive: true }}
             variant="success"
           />
           <MetricCard
-            title="SLA Breaches"
-            value={breachedCount}
+            title={isRoad ? "SLA Breaches" : "High Risk Suppliers"}
+            value={criticalCount}
             subtitle="Require attention"
             icon={AlertTriangle}
-            variant={breachedCount > 0 ? 'danger' : 'default'}
+            variant={criticalCount > 0 ? 'danger' : 'default'}
           />
           <MetricCard
-            title="Avg. Resolution"
-            value={`${avgDaysOpen}d`}
-            subtitle="Days to repair"
-            icon={Clock}
-            trend={{ value: 8, isPositive: true }}
+            title="States Covered"
+            value="18+"
+            subtitle="Pan-India network"
+            icon={MapPin}
             variant="default"
           />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Form & Agents */}
+          {/* Left Column */}
           <div className="lg:col-span-1 space-y-6">
-            <PotholeForm onSubmit={handleFormSubmit} />
+            <ProjectSelector selectedProject={selectedProject} onProjectChange={setSelectedProject} />
             
-            {/* Agent Analysis Results */}
+            {isRoad ? (
+              <PotholeForm onSubmit={handleRoadFormSubmit} />
+            ) : (
+              <SupplierForm onSubmit={handleSupplierFormSubmit} />
+            )}
+            
             {agentAnalyses.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
@@ -151,48 +209,45 @@ export default function Index() {
             )}
           </div>
           
-          {/* Right Column - Data & Visualizations */}
+          {/* Right Column */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Alerts */}
             <AlertPanel alerts={alerts} />
             
-            {/* Timeline */}
-            {timeline.length > 0 && analyzedPothole && (
-              <Timeline events={timeline} potholeId={analyzedPothole.id} />
+            {timeline.length > 0 && analyzedEntity && (
+              <Timeline events={timeline} potholeId={analyzedEntity} />
             )}
             
-            {/* Contractor Scorecard */}
-            {lastContractorScore ? (
-              <ContractorScorecard contractors={[lastContractorScore]} />
+            {isRoad ? (
+              <>
+                {lastContractorScore && <ContractorScorecard contractors={[lastContractorScore]} />}
+                <PotholeTable potholes={potholes} />
+              </>
             ) : (
-              <ContractorScorecard contractors={contractors} />
+              <>
+                {lastSupplierScore && <SupplierScorecard suppliers={[lastSupplierScore]} />}
+                <SupplierTable suppliers={suppliers} />
+              </>
             )}
-            
-            {/* Pothole Table */}
-            <PotholeTable potholes={potholes} />
           </div>
         </div>
         
         {/* Final Message */}
-        {analyzedPothole && (
+        {analyzedEntity && (
           <div className="mt-8 p-6 bg-primary text-primary-foreground rounded-xl shadow-card animate-slide-up">
             <div className="flex items-start gap-4">
               <div className="p-3 bg-primary-foreground/10 rounded-xl">
                 <TrendingUp className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="text-xl font-bold">ROAD-GUARDIAN Analysis Complete</h3>
+                <h3 className="text-xl font-bold">BHARAT-GUARDIAN Analysis Complete</h3>
                 <p className="mt-2 text-primary-foreground/80">
-                  Pothole <span className="font-mono font-bold">{analyzedPothole.id}</span> at {analyzedPothole.location} has been 
-                  fully analyzed. All 6 AI agents have processed the data. 
-                  {analyzedPothole.slaStatus === 'breached' 
-                    ? ' ⚠️ Immediate action required due to SLA breach.' 
-                    : analyzedPothole.slaStatus === 'at_risk'
-                    ? ' ⏳ Monitoring closely as SLA deadline approaches.'
-                    : ' ✅ All metrics within acceptable parameters.'}
+                  Entity <span className="font-mono font-bold">{analyzedEntity}</span> has been fully analyzed by {agentAnalyses.length} AI agents.
+                  {isRoad ? ' Municipal authorities and contractors notified via CPGRAMS.' : ' Procurement and operations teams notified.'}
                 </p>
                 <p className="mt-2 text-sm text-primary-foreground/60">
-                  Citizens can track progress in real-time. Contractor accountability is being monitored 24/7.
+                  {isRoad 
+                    ? 'Citizens can track progress in real-time. Contractor accountability monitored 24/7 across India.'
+                    : 'Make-in-India supply chain resilience maintained. Real-time supplier monitoring active.'}
                 </p>
               </div>
             </div>
@@ -206,11 +261,11 @@ export default function Index() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-primary" />
-              <span className="font-semibold text-foreground">ROAD-GUARDIAN</span>
-              <span className="text-muted-foreground text-sm">• Agentic AI Platform</span>
+              <span className="font-semibold text-foreground">BHARAT-GUARDIAN</span>
+              <span className="text-muted-foreground text-sm">• National Agentic AI Platform</span>
             </div>
             <p className="text-sm text-muted-foreground text-center">
-              Ensuring road safety, contractor accountability, and public transparency through AI-powered infrastructure management.
+              Ensuring infrastructure accountability and supply chain resilience across India through AI-powered governance.
             </p>
           </div>
         </div>

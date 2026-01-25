@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
-import { TimelineEvent, PotholeStatus } from '@/types/pothole';
+import { TimelineEvent } from '@/types/bharatGuardian';
 import { format } from 'date-fns';
-import { CheckCircle, Circle, Clock, Wrench, Flag, FileCheck } from 'lucide-react';
+import { CheckCircle, Circle, Clock, Wrench, Flag, FileCheck, Package, AlertTriangle, TrendingUp } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
 interface TimelineProps {
@@ -9,20 +9,32 @@ interface TimelineProps {
   potholeId: string;
 }
 
-const statusIcons: Record<PotholeStatus, LucideIcon> = {
+const statusIcons: Record<string, LucideIcon> = {
   reported: Flag,
   assigned: FileCheck,
   in_progress: Wrench,
   repaired: CheckCircle,
   closed: Circle,
+  // Supply chain statuses
+  ingested: Package,
+  validated: CheckCircle,
+  flagged: AlertTriangle,
+  resolved: TrendingUp,
+  monitoring: Clock,
 };
 
-const statusColors: Record<PotholeStatus, string> = {
+const statusColors: Record<string, string> = {
   reported: 'bg-info text-info-foreground',
   assigned: 'bg-agent-detection text-white',
   in_progress: 'bg-warning text-warning-foreground',
   repaired: 'bg-success text-success-foreground',
   closed: 'bg-muted text-muted-foreground',
+  // Supply chain statuses
+  ingested: 'bg-info text-info-foreground',
+  validated: 'bg-success text-success-foreground',
+  flagged: 'bg-destructive text-destructive-foreground',
+  resolved: 'bg-success text-success-foreground',
+  monitoring: 'bg-warning text-warning-foreground',
 };
 
 export function Timeline({ events, potholeId }: TimelineProps) {
@@ -34,7 +46,7 @@ export function Timeline({ events, potholeId }: TimelineProps) {
           <h3 className="text-lg font-semibold text-foreground">Public Transparency Timeline</h3>
         </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Track progress for Pothole <span className="font-mono text-primary">{potholeId}</span>
+          Track progress for Entity <span className="font-mono text-primary">{potholeId}</span>
         </p>
       </div>
       
@@ -45,7 +57,8 @@ export function Timeline({ events, potholeId }: TimelineProps) {
           
           <div className="space-y-6">
             {events.map((event, index) => {
-              const Icon = statusIcons[event.status];
+              const Icon = statusIcons[event.status] || Circle;
+              const colorClass = statusColors[event.status] || 'bg-muted text-muted-foreground';
               const isLast = index === events.length - 1;
               
               return (
@@ -57,7 +70,7 @@ export function Timeline({ events, potholeId }: TimelineProps) {
                   {/* Icon */}
                   <div className={cn(
                     "relative z-10 w-10 h-10 rounded-full flex items-center justify-center",
-                    statusColors[event.status],
+                    colorClass,
                     isLast && "ring-4 ring-offset-2 ring-offset-card"
                   )}>
                     <Icon className="w-5 h-5" />
@@ -87,8 +100,8 @@ export function Timeline({ events, potholeId }: TimelineProps) {
         <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border">
           <p className="text-sm text-foreground">
             <span className="font-semibold">📍 What this means for you:</span>{' '}
-            Your reported pothole is being actively tracked. Our AI system monitors progress 24/7 
-            to ensure timely repairs and contractor accountability.
+            Your reported issue is being actively tracked. Our AI system monitors progress 24/7 
+            to ensure timely resolution and accountability.
           </p>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { Alert } from '@/types/pothole';
+import { Alert } from '@/types/bharatGuardian';
 import { cn } from '@/lib/utils';
 import { 
   AlertTriangle, 
@@ -6,7 +6,9 @@ import {
   Shield, 
   TrendingDown,
   Bell,
-  XCircle
+  Package,
+  Zap,
+  Factory
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -14,11 +16,14 @@ interface AlertPanelProps {
   alerts: Alert[];
 }
 
-const alertIcons = {
+const alertIcons: Record<Alert['type'], typeof Clock> = {
   delay: Clock,
   quality: Shield,
   safety: AlertTriangle,
   performance: TrendingDown,
+  phantom_stock: Package,
+  disruption: Zap,
+  capacity: Factory,
 };
 
 const severityColors = {
@@ -67,7 +72,7 @@ export function AlertPanel({ alerts }: AlertPanelProps) {
       
       <div className="divide-y divide-border">
         {alerts.map((alert, index) => {
-          const Icon = alertIcons[alert.type];
+          const Icon = alertIcons[alert.type] || AlertTriangle;
           
           return (
             <div 
@@ -99,11 +104,14 @@ export function AlertPanel({ alerts }: AlertPanelProps) {
                   </p>
                   
                   <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
-                    {alert.potholeId && (
-                      <span className="font-mono">ID: {alert.potholeId}</span>
+                    {alert.entityId && (
+                      <span className="font-mono">ID: {alert.entityId}</span>
                     )}
                     {alert.contractor && (
                       <span>Contractor: {alert.contractor}</span>
+                    )}
+                    {alert.supplier && (
+                      <span>Supplier: {alert.supplier}</span>
                     )}
                     <span>{formatDistanceToNow(alert.timestamp, { addSuffix: true })}</span>
                   </div>

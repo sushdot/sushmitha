@@ -11,14 +11,15 @@ import { ContractorScorecard } from '@/components/ContractorScorecard';
 import { SupplierScorecard } from '@/components/SupplierScorecard';
 import { Timeline } from '@/components/Timeline';
 import { AlertPanel } from '@/components/AlertPanel';
+import { IndiaMap } from '@/components/IndiaMap';
 import { analyzeWithRoadGuardian, analyzeWithPhantomX } from '@/lib/bharatGuardianEngine';
 import { 
   ProjectType, Pothole, Supplier, AgentAnalysis, TimelineEvent, Alert, 
-  ContractorScore, SupplierScore, INDIAN_STATES, INDIAN_CITIES, INDIAN_CONTRACTORS 
+  ContractorScore, SupplierScore
 } from '@/types/bharatGuardian';
 import { 
-  AlertTriangle, CheckCircle, Clock, Construction, Shield, TrendingUp,
-  Package, Factory, MapPin
+  AlertTriangle, CheckCircle, Construction, Shield, TrendingUp,
+  Factory, MapPin
 } from 'lucide-react';
 
 // Demo data
@@ -211,6 +212,12 @@ export default function Index() {
           
           {/* Right Column */}
           <div className="lg:col-span-2 space-y-6">
+            <IndiaMap 
+              potholes={potholes} 
+              suppliers={suppliers} 
+              selectedProject={selectedProject === 'road_guardian' ? 'road_guardian' : 'phantom_x'} 
+            />
+            
             <AlertPanel alerts={alerts} />
             
             {timeline.length > 0 && analyzedEntity && (

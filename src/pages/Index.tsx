@@ -12,14 +12,17 @@ import { SupplierScorecard } from '@/components/SupplierScorecard';
 import { Timeline } from '@/components/Timeline';
 import { AlertPanel } from '@/components/AlertPanel';
 import { IndiaMap } from '@/components/IndiaMap';
+import { AdvancedPotholeAnalysisDashboard } from '@/components/AdvancedPotholeAnalysis';
 import { analyzeWithRoadGuardian, analyzeWithPhantomX } from '@/lib/bharatGuardianEngine';
+import { runAdvancedAnalysis } from '@/lib/roadGuardianXEngine';
+import { AdvancedPotholeAnalysis } from '@/types/roadGuardianX';
 import { 
   ProjectType, Pothole, Supplier, AgentAnalysis, TimelineEvent, Alert, 
   ContractorScore, SupplierScore
 } from '@/types/bharatGuardian';
 import { 
   AlertTriangle, CheckCircle, Construction, Shield, TrendingUp,
-  Factory, MapPin
+  Factory, MapPin, Brain
 } from 'lucide-react';
 
 // Demo data
@@ -113,14 +116,26 @@ export default function Index() {
   const [lastContractorScore, setLastContractorScore] = useState<ContractorScore | null>(null);
   const [lastSupplierScore, setLastSupplierScore] = useState<SupplierScore | null>(null);
   const [analyzedEntity, setAnalyzedEntity] = useState<string | null>(null);
+  const [advancedAnalysis, setAdvancedAnalysis] = useState<AdvancedPotholeAnalysis | null>(null);
 
   const handleRoadFormSubmit = (formData: any) => {
     const result = analyzeWithRoadGuardian(formData, potholes);
-    setAgentAnalyses(result.agentAnalyses);
+    
+    // Run advanced ROAD-GUARDIAN X analysis
+    const { advancedAnalysis: advanced, advancedAgentAnalyses } = runAdvancedAnalysis(
+      result.pothole, 
+      result.contractorScore, 
+      potholes
+    );
+    
+    // Combine base agents with advanced agents
+    setAgentAnalyses([...result.agentAnalyses, ...advancedAgentAnalyses]);
     setTimeline(result.timeline);
     setAlerts(result.alerts);
     setLastContractorScore(result.contractorScore);
     setAnalyzedEntity(result.pothole.id);
+    setAdvancedAnalysis(advanced);
+    
     if (!potholes.find(p => p.id === result.pothole.id)) {
       setPotholes([result.pothole, ...potholes]);
     }
@@ -226,6 +241,15 @@ export default function Index() {
             
             {isRoad ? (
               <>
+                {advancedAnalysis && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-primary" />
+                      <h2 className="text-lg font-semibold text-foreground">ROAD-GUARDIAN X Advanced Analysis</h2>
+                    </div>
+                    <AdvancedPotholeAnalysisDashboard analysis={advancedAnalysis} />
+                  </div>
+                )}
                 {lastContractorScore && <ContractorScorecard contractors={[lastContractorScore]} />}
                 <PotholeTable potholes={potholes} />
               </>

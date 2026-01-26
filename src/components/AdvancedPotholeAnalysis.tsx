@@ -2,15 +2,25 @@ import { cn } from '@/lib/utils';
 import { AdvancedPotholeAnalysis as AdvancedAnalysisType } from '@/types/roadGuardianX';
 import { 
   Shield, Clock, Users, AlertTriangle, Banknote, Brain, 
-  TrendingUp, TrendingDown, Minus, Calendar, MapPin, Target
+  TrendingUp, TrendingDown, Minus, Calendar, MapPin, Target,
+  Gauge, CarFront, UserCheck, Wrench, Building2, BadgeCheck, 
+  Activity, HelpCircle, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { useState } from 'react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface AdvancedPotholeAnalysisProps {
   analysis: AdvancedAnalysisType;
 }
 
 export function AdvancedPotholeAnalysisDashboard({ analysis }: AdvancedPotholeAnalysisProps) {
+  const [showExtendedDetails, setShowExtendedDetails] = useState(true);
+  
   const { 
     digitalIdentity, 
     durabilityPrediction, 
@@ -19,7 +29,8 @@ export function AdvancedPotholeAnalysisDashboard({ analysis }: AdvancedPotholeAn
     criticalityScore,
     slaOptimization,
     financialLeakage,
-    aiVerdict 
+    aiVerdict,
+    extendedIntelligence
   } = analysis;
 
   return (
@@ -262,6 +273,136 @@ export function AdvancedPotholeAnalysisDashboard({ analysis }: AdvancedPotholeAn
         </MetricCard>
       </div>
 
+      {/* Extended Intelligence Mode Section */}
+      <div className="bg-gradient-to-r from-primary/5 via-info/5 to-success/5 rounded-xl shadow-card overflow-hidden border border-primary/20">
+        <button 
+          onClick={() => setShowExtendedDetails(!showExtendedDetails)}
+          className="w-full px-4 py-3 flex items-center justify-between bg-gradient-to-r from-primary/10 to-transparent hover:from-primary/15 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-primary animate-pulse" />
+            <h3 className="font-bold text-foreground">EXTENDED INTELLIGENCE MODE</h3>
+            <span className="px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full font-medium">8 Advanced Metrics</span>
+          </div>
+          {showExtendedDetails ? (
+            <ChevronUp className="w-5 h-5 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-muted-foreground" />
+          )}
+        </button>
+        
+        {showExtendedDetails && (
+          <div className="p-4 space-y-4">
+            {/* Row 1: Age Debt & Accident Probability */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ExtendedMetricCard
+                icon={Gauge}
+                title="Pothole Age Debt"
+                value={extendedIntelligence.potholeAgeDebt.score.toString()}
+                unit="urgency points"
+                status={extendedIntelligence.potholeAgeDebt.score >= 50 ? 'critical' : extendedIntelligence.potholeAgeDebt.score >= 30 ? 'warning' : 'ok'}
+                subtitle={`${extendedIntelligence.potholeAgeDebt.daysOpen} days × ${extendedIntelligence.potholeAgeDebt.riskFactor} risk factor`}
+                explanation={extendedIntelligence.potholeAgeDebt.citizenExplanation}
+              />
+              
+              <ExtendedMetricCard
+                icon={CarFront}
+                title="Accident Probability (7-day)"
+                value={`${extendedIntelligence.accidentProbability.percentage}%`}
+                status={extendedIntelligence.accidentProbability.percentage >= 50 ? 'critical' : extendedIntelligence.accidentProbability.percentage >= 30 ? 'warning' : 'ok'}
+                subtitle={`Confidence: ${extendedIntelligence.accidentProbability.confidenceLevel.toUpperCase()}`}
+                explanation={extendedIntelligence.accidentProbability.citizenExplanation}
+                factors={extendedIntelligence.accidentProbability.factors}
+              />
+            </div>
+            
+            {/* Row 2: Contractor Pattern & Repair Confidence */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ExtendedMetricCard
+                icon={UserCheck}
+                title="Contractor Behavioral Pattern"
+                value={extendedIntelligence.contractorBehavioralPattern.pattern.toUpperCase()}
+                status={
+                  extendedIntelligence.contractorBehavioralPattern.pattern === 'problematic' ? 'critical' :
+                  extendedIntelligence.contractorBehavioralPattern.pattern === 'declining' ? 'warning' :
+                  extendedIntelligence.contractorBehavioralPattern.pattern === 'inconsistent' ? 'info' : 'ok'
+                }
+                subtitle={`Avg Response: ${extendedIntelligence.contractorBehavioralPattern.avgResponseDays.toFixed(1)} days • Quality: ${extendedIntelligence.contractorBehavioralPattern.qualityTrend}`}
+                explanation={extendedIntelligence.contractorBehavioralPattern.citizenExplanation}
+              />
+              
+              <ExtendedMetricCard
+                icon={Target}
+                title="Repair Confidence Level"
+                value={extendedIntelligence.repairConfidenceLevel.level}
+                unit={`(${extendedIntelligence.repairConfidenceLevel.score}/100)`}
+                status={
+                  extendedIntelligence.repairConfidenceLevel.level === 'Low' ? 'critical' :
+                  extendedIntelligence.repairConfidenceLevel.level === 'Medium' ? 'warning' : 'ok'
+                }
+                explanation={extendedIntelligence.repairConfidenceLevel.citizenExplanation}
+                factors={extendedIntelligence.repairConfidenceLevel.keyFactors}
+              />
+            </div>
+            
+            {/* Row 3: Repair Method & Department Responsibility */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ExtendedMetricCard
+                icon={Wrench}
+                title="AI-Recommended Repair Method"
+                value={extendedIntelligence.aiRecommendedRepairMethod.method.replace(/_/g, ' ').toUpperCase()}
+                status="info"
+                subtitle={`Est. Cost: ₹${extendedIntelligence.aiRecommendedRepairMethod.estimatedCost.toLocaleString('en-IN')} • Duration: ${extendedIntelligence.aiRecommendedRepairMethod.estimatedDuration}h`}
+                explanation={extendedIntelligence.aiRecommendedRepairMethod.citizenExplanation}
+                extraInfo={`Material: ${extendedIntelligence.aiRecommendedRepairMethod.materialRequired}`}
+              />
+              
+              <ExtendedMetricCard
+                icon={Building2}
+                title="Inter-Department Responsibility"
+                value={extendedIntelligence.interDepartmentResponsibility.coordinationLevel.toUpperCase()}
+                status={
+                  extendedIntelligence.interDepartmentResponsibility.coordinationLevel === 'complex' ? 'warning' :
+                  extendedIntelligence.interDepartmentResponsibility.coordinationLevel === 'multi' ? 'info' : 'ok'
+                }
+                subtitle={extendedIntelligence.interDepartmentResponsibility.primaryDepartment}
+                explanation={extendedIntelligence.interDepartmentResponsibility.citizenExplanation}
+                factors={extendedIntelligence.interDepartmentResponsibility.supportingDepartments}
+              />
+            </div>
+            
+            {/* Row 4: Warranty & Civic Health */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ExtendedMetricCard
+                icon={BadgeCheck}
+                title="Repair Warranty Confidence"
+                value={`${extendedIntelligence.repairWarrantyConfidence.months} Months`}
+                status={
+                  extendedIntelligence.repairWarrantyConfidence.confidence === 'low' ? 'warning' :
+                  extendedIntelligence.repairWarrantyConfidence.confidence === 'high' ? 'ok' : 'info'
+                }
+                subtitle={`Confidence: ${extendedIntelligence.repairWarrantyConfidence.confidence.toUpperCase()}`}
+                explanation={extendedIntelligence.repairWarrantyConfidence.citizenExplanation}
+                factors={extendedIntelligence.repairWarrantyConfidence.factors}
+              />
+              
+              <ExtendedMetricCard
+                icon={Activity}
+                title="City-Level Civic Health Index"
+                value={`Grade ${extendedIntelligence.cityLevelCivicHealthIndex.grade}`}
+                unit={`(${extendedIntelligence.cityLevelCivicHealthIndex.score}/100)`}
+                status={
+                  extendedIntelligence.cityLevelCivicHealthIndex.grade === 'F' || extendedIntelligence.cityLevelCivicHealthIndex.grade === 'D' ? 'critical' :
+                  extendedIntelligence.cityLevelCivicHealthIndex.grade === 'C' ? 'warning' : 'ok'
+                }
+                subtitle={`Infrastructure: ${extendedIntelligence.cityLevelCivicHealthIndex.infrastructureHealth}% • Response: ${extendedIntelligence.cityLevelCivicHealthIndex.responseEfficiency}%`}
+                explanation={extendedIntelligence.cityLevelCivicHealthIndex.citizenExplanation}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* AI Verdict Card */}
       <div className={cn(
         "rounded-xl shadow-card overflow-hidden border-2",
@@ -355,6 +496,96 @@ function MetricCard({
         <h4 className="font-medium text-foreground text-sm">{title}</h4>
       </div>
       {children}
+    </div>
+  );
+}
+
+function ExtendedMetricCard({ 
+  icon: Icon, 
+  title, 
+  value,
+  unit,
+  status,
+  subtitle,
+  explanation,
+  factors,
+  extraInfo
+}: { 
+  icon: typeof Clock; 
+  title: string; 
+  value: string;
+  unit?: string;
+  status: 'ok' | 'warning' | 'critical' | 'info';
+  subtitle?: string;
+  explanation: string;
+  factors?: string[];
+  extraInfo?: string;
+}) {
+  const statusColors = {
+    ok: 'border-success/50 bg-success/5',
+    warning: 'border-warning/50 bg-warning/5',
+    critical: 'border-destructive/50 bg-destructive/5',
+    info: 'border-info/50 bg-info/5'
+  };
+  
+  const valueColors = {
+    ok: 'text-success',
+    warning: 'text-warning',
+    critical: 'text-destructive',
+    info: 'text-info'
+  };
+
+  return (
+    <div className={cn("rounded-lg border p-4 space-y-2", statusColors[status])}>
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2">
+          <Icon className={cn("w-5 h-5", valueColors[status])} />
+          <h5 className="font-medium text-foreground text-sm">{title}</h5>
+        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button className="text-muted-foreground hover:text-foreground transition-colors">
+              <HelpCircle className="w-4 h-4" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="left" className="max-w-xs">
+            <p className="text-sm">{explanation}</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
+      
+      <div className="flex items-baseline gap-2">
+        <span className={cn("text-xl font-bold", valueColors[status])}>{value}</span>
+        {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
+      </div>
+      
+      {subtitle && (
+        <p className="text-xs text-muted-foreground">{subtitle}</p>
+      )}
+      
+      {factors && factors.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {factors.slice(0, 3).map((factor, i) => (
+            <span key={i} className="px-2 py-0.5 bg-muted/50 text-muted-foreground text-xs rounded-full">
+              {factor}
+            </span>
+          ))}
+          {factors.length > 3 && (
+            <span className="px-2 py-0.5 bg-muted/50 text-muted-foreground text-xs rounded-full">
+              +{factors.length - 3} more
+            </span>
+          )}
+        </div>
+      )}
+      
+      {extraInfo && (
+        <p className="text-xs text-muted-foreground italic">{extraInfo}</p>
+      )}
+      
+      {/* Citizen-friendly explanation */}
+      <p className="text-xs text-muted-foreground pt-2 border-t border-border/50 mt-2">
+        💡 {explanation}
+      </p>
     </div>
   );
 }

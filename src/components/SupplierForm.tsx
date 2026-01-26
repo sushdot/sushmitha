@@ -4,7 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { INDIAN_STATES, INDIAN_CITIES, INDIAN_SUPPLIERS, SupplierStatus } from '@/types/bharatGuardian';
-import { Send, Package, MapPin, Factory, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Send, Package, MapPin, Factory, AlertTriangle, BarChart3, LogIn } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface SupplierFormData {
   supplierId: string;
@@ -40,6 +44,12 @@ const statusOptions: { value: SupplierStatus; label: string }[] = [
 ];
 
 export function SupplierForm({ onSubmit }: SupplierFormProps) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedState, setSelectedState] = useState('');
+  const cities = selectedState ? INDIAN_CITIES[selectedState] || [] : [];
+
   const [formData, setFormData] = useState<SupplierFormData>({
     supplierId: '',
     supplierName: '',
@@ -55,18 +65,119 @@ export function SupplierForm({ onSubmit }: SupplierFormProps) {
     lastAuditDate: new Date().toISOString().split('T')[0]
   });
 
-  const [selectedState, setSelectedState] = useState('');
-  const cities = selectedState ? INDIAN_CITIES[selectedState] || [] : [];
-
   const handleStateChange = (state: string) => {
     setSelectedState(state);
     setFormData({ ...formData, state, city: '' });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
+  const generateSupplierId = () => {
+    const stateCode = formData.state.substring(0, 2).toUpperCase();
+    const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+    return `SUP-${stateCode}-${random}`;
   };
+
+  const calculatePhantomStockPercentage = (reported: number, actual?: number) => {
+    if (!actual || actual >= reported) return 0;
+    return Math.round(((reported - actual) / reported) * 100);
+  };
+
+  const calculateDisruptionRisk = (phantomPercentage: number, utilization: number, status: SupplierStatus): 'low' | 'medium' | 'high' | 'critical' => {
+    if (status === 'disrupted' || status === 'blacklisted') return 'critical';
+    if (phantomPercentage > 25 || utilization > 95) return 'critical';
+    if (phantomPercentage > 15 || utilization > 85) return 'high';
+    if (phantomPercentage > 5 || utilization > 75) return 'medium';
+    return 'low';
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      toast.error('Please sign in to add supplier data');
+      return;
+    }
+
+    if (!formData.state || !formData.city || !formData.supplierName) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const supplierId = formData.supplierId || generateSupplierId();
+      const phantomPercentage = calculatePhantomStockPercentage(formData.reportedStock, formData.actualStock);
+      const disruptionRisk = calculateDisruptionRisk(phantomPercentage, formData.currentUtilization, formData.status);
+
+      const { error } = await supabase.from('suppliers').insert({
+        supplier_id: supplierId,
+        name: formData.supplierName,
+        tier: formData.tier,
+        city: formData.city,
+        state: formData.state,
+        reported_stock: formData.reportedStock,
+        actual_stock: formData.actualStock || null,
+        phantom_stock_percentage: phantomPercentage,
+        production_capacity: formData.productionCapacity,
+        current_utilization: formData.currentUtilization,
+        lead_time_days: formData.leadTimeDays,
+        status: formData.status,
+        last_audit_date: formData.lastAuditDate,
+        disruption_risk: disruptionRisk,
+        regional_factors: []
+      });
+
+      if (error) throw error;
+
+      toast.success('Supplier data saved to database!');
+      
+      // Also trigger the AI analysis
+      onSubmit(formData);
+
+      // Reset form
+      setFormData({
+        supplierId: '',
+        supplierName: '',
+        tier: 'tier_1',
+        state: '',
+        city: '',
+        reportedStock: 0,
+        actualStock: undefined,
+        productionCapacity: 100,
+        currentUtilization: 75,
+        leadTimeDays: 7,
+        status: 'active',
+        lastAuditDate: new Date().toISOString().split('T')[0]
+      });
+      setSelectedState('');
+    } catch (error: any) {
+      console.error('Error saving supplier:', error);
+      toast.error(error.message || 'Failed to save supplier data');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="bg-card rounded-xl shadow-card overflow-hidden animate-fade-in">
+        <div className="px-6 py-4 border-b border-border bg-gradient-to-r from-agent-detection/20 to-transparent">
+          <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+            <Package className="w-5 h-5 text-agent-detection" />
+            PHANTOM-X Supply Chain Input
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">Sign in to add supplier data</p>
+        </div>
+        <div className="p-6 text-center">
+          <p className="text-muted-foreground mb-4">You need to be signed in to add supplier data.</p>
+          <Button onClick={() => navigate('/auth')} className="gap-2">
+            <LogIn className="w-4 h-4" />
+            Sign In to Continue
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-card overflow-hidden animate-fade-in">
@@ -84,11 +195,11 @@ export function SupplierForm({ onSubmit }: SupplierFormProps) {
           <div className="space-y-2">
             <Label htmlFor="supplierId" className="flex items-center gap-2">
               <span className="text-agent-detection font-mono">#</span>
-              Supplier ID
+              Supplier ID (optional)
             </Label>
             <Input
               id="supplierId"
-              placeholder="e.g., SUP-MH-001 or 'New'"
+              placeholder="Auto-generated if left blank"
               value={formData.supplierId}
               onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
               className="font-mono"
@@ -99,7 +210,7 @@ export function SupplierForm({ onSubmit }: SupplierFormProps) {
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Factory className="w-4 h-4 text-agent-detection" />
-              Supplier Name
+              Supplier Name *
             </Label>
             <Select
               value={formData.supplierName}
@@ -140,7 +251,7 @@ export function SupplierForm({ onSubmit }: SupplierFormProps) {
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-agent-detection" />
-              State
+              State *
             </Label>
             <Select value={selectedState} onValueChange={handleStateChange}>
               <SelectTrigger>
@@ -156,7 +267,7 @@ export function SupplierForm({ onSubmit }: SupplierFormProps) {
           
           {/* City */}
           <div className="space-y-2">
-            <Label>City</Label>
+            <Label>City *</Label>
             <Select
               value={formData.city}
               onValueChange={(value) => setFormData({ ...formData, city: value })}
@@ -276,9 +387,14 @@ export function SupplierForm({ onSubmit }: SupplierFormProps) {
         </div>
         
         {/* Submit Button */}
-        <Button type="submit" className="w-full gap-2 bg-gradient-to-r from-agent-detection to-primary hover:opacity-90" size="lg">
+        <Button 
+          type="submit" 
+          className="w-full gap-2 bg-gradient-to-r from-agent-detection to-primary hover:opacity-90" 
+          size="lg"
+          disabled={isSubmitting}
+        >
           <Send className="w-4 h-4" />
-          Analyze with PHANTOM-X AI
+          {isSubmitting ? 'Saving...' : 'Analyze with PHANTOM-X AI'}
         </Button>
       </div>
     </form>

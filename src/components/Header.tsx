@@ -1,4 +1,5 @@
 import { Shield, Radio, MapPin } from 'lucide-react';
+import { AuthButton } from '@/components/AuthButton';
 
 export function Header() {
   return (
@@ -25,6 +26,7 @@ export function Header() {
               <Radio className="w-4 h-4 text-success animate-pulse" />
               <span className="text-sm font-medium">System Active</span>
             </div>
+            <AuthButton />
           </div>
         </div>
       </div>

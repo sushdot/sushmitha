@@ -5,11 +5,18 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { PotholeStatus } from '@/types/pothole';
-import { Send, MapPin, Calendar, User, Clock, RotateCcw } from 'lucide-react';
+import { INDIAN_STATES, INDIAN_CITIES, INDIAN_CONTRACTORS } from '@/types/bharatGuardian';
+import { Send, MapPin, Calendar, User, Clock, RotateCcw, LogIn } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface PotholeFormData {
   potholeId: string;
   location: string;
+  state: string;
+  city: string;
   dateReported: string;
   contractor: string;
   expectedSLA: number;
@@ -22,14 +29,6 @@ interface PotholeFormProps {
   onSubmit: (data: PotholeFormData) => void;
 }
 
-const contractors = [
-  'RoadWorks Pro Inc.',
-  'City Maintenance Corp',
-  'QuickFix Contractors',
-  'Metro Roads Ltd.',
-  'Urban Infrastructure Co.',
-];
-
 const statuses: { value: PotholeStatus; label: string }[] = [
   { value: 'reported', label: 'Reported' },
   { value: 'assigned', label: 'Assigned' },
@@ -39,9 +38,17 @@ const statuses: { value: PotholeStatus; label: string }[] = [
 ];
 
 export function PotholeForm({ onSubmit }: PotholeFormProps) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedState, setSelectedState] = useState('');
+  const cities = selectedState ? INDIAN_CITIES[selectedState] || [] : [];
+
   const [formData, setFormData] = useState<PotholeFormData>({
     potholeId: '',
     location: '',
+    state: '',
+    city: '',
     dateReported: new Date().toISOString().split('T')[0],
     contractor: '',
     expectedSLA: 7,
@@ -50,10 +57,98 @@ export function PotholeForm({ onSubmit }: PotholeFormProps) {
     daysSinceLastRepair: undefined,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
+  const handleStateChange = (state: string) => {
+    setSelectedState(state);
+    setFormData({ ...formData, state, city: '' });
   };
+
+  const generatePotholeId = () => {
+    const stateCode = formData.state.substring(0, 2).toUpperCase();
+    const cityCode = formData.city.substring(0, 3).toUpperCase();
+    const random = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+    return `PH-${stateCode}-${cityCode}-${random}`;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      toast.error('Please sign in to report a pothole');
+      return;
+    }
+
+    if (!formData.state || !formData.city || !formData.location || !formData.contractor) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const potholeId = formData.potholeId || generatePotholeId();
+      const daysOpen = Math.floor((new Date().getTime() - new Date(formData.dateReported).getTime()) / (1000 * 60 * 60 * 24));
+      
+      const { error } = await supabase.from('potholes').insert({
+        pothole_id: potholeId,
+        location: formData.location,
+        city: formData.city,
+        state: formData.state,
+        contractor: formData.contractor,
+        date_reported: formData.dateReported,
+        expected_sla: formData.expectedSLA,
+        status: formData.status,
+        previous_repairs: formData.previousRepairs,
+        days_since_last_repair: formData.daysSinceLastRepair || null,
+        days_open: daysOpen,
+        sla_status: daysOpen > formData.expectedSLA ? 'breached' : daysOpen > formData.expectedSLA * 0.7 ? 'at_risk' : 'on_track'
+      });
+
+      if (error) throw error;
+
+      toast.success('Pothole reported and saved to database!');
+      
+      // Also trigger the AI analysis
+      onSubmit({ ...formData, potholeId });
+
+      // Reset form
+      setFormData({
+        potholeId: '',
+        location: '',
+        state: '',
+        city: '',
+        dateReported: new Date().toISOString().split('T')[0],
+        contractor: '',
+        expectedSLA: 7,
+        status: 'reported',
+        previousRepairs: false,
+        daysSinceLastRepair: undefined,
+      });
+      setSelectedState('');
+    } catch (error: any) {
+      console.error('Error saving pothole:', error);
+      toast.error(error.message || 'Failed to save pothole report');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!user) {
+    return (
+      <div className="bg-card rounded-xl shadow-card overflow-hidden animate-fade-in">
+        <div className="px-6 py-4 border-b border-border hero-gradient">
+          <h3 className="text-lg font-semibold text-primary-foreground">Submit Pothole Report</h3>
+          <p className="text-sm text-primary-foreground/70 mt-1">Sign in to report potholes</p>
+        </div>
+        <div className="p-6 text-center">
+          <p className="text-muted-foreground mb-4">You need to be signed in to report potholes.</p>
+          <Button onClick={() => navigate('/auth')} className="gap-2">
+            <LogIn className="w-4 h-4" />
+            Sign In to Report
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-card overflow-hidden animate-fade-in">
@@ -68,11 +163,11 @@ export function PotholeForm({ onSubmit }: PotholeFormProps) {
           <div className="space-y-2">
             <Label htmlFor="potholeId" className="flex items-center gap-2">
               <span className="text-primary font-mono">#</span>
-              Pothole ID
+              Pothole ID (optional)
             </Label>
             <Input
               id="potholeId"
-              placeholder="e.g., PH-2024-001 or 'New'"
+              placeholder="Auto-generated if left blank"
               value={formData.potholeId}
               onChange={(e) => setFormData({ ...formData, potholeId: e.target.value })}
               className="font-mono"
@@ -83,14 +178,52 @@ export function PotholeForm({ onSubmit }: PotholeFormProps) {
           <div className="space-y-2">
             <Label htmlFor="location" className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-primary" />
-              Location
+              Location / Road Name *
             </Label>
             <Input
               id="location"
               placeholder="Road / Area name"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              required
             />
+          </div>
+          
+          {/* State */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              State *
+            </Label>
+            <Select value={selectedState} onValueChange={handleStateChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select state" />
+              </SelectTrigger>
+              <SelectContent>
+                {INDIAN_STATES.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* City */}
+          <div className="space-y-2">
+            <Label>City *</Label>
+            <Select
+              value={formData.city}
+              onValueChange={(value) => setFormData({ ...formData, city: value })}
+              disabled={!selectedState}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={selectedState ? "Select city" : "Select state first"} />
+              </SelectTrigger>
+              <SelectContent>
+                {cities.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           {/* Date Reported */}
@@ -111,7 +244,7 @@ export function PotholeForm({ onSubmit }: PotholeFormProps) {
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <User className="w-4 h-4 text-primary" />
-              Contractor Assigned
+              Contractor Assigned *
             </Label>
             <Select
               value={formData.contractor}
@@ -121,7 +254,7 @@ export function PotholeForm({ onSubmit }: PotholeFormProps) {
                 <SelectValue placeholder="Select contractor" />
               </SelectTrigger>
               <SelectContent>
-                {contractors.map((c) => (
+                {INDIAN_CONTRACTORS.map((c) => (
                   <SelectItem key={c} value={c}>{c}</SelectItem>
                 ))}
               </SelectContent>
@@ -197,9 +330,9 @@ export function PotholeForm({ onSubmit }: PotholeFormProps) {
         )}
         
         {/* Submit Button */}
-        <Button type="submit" className="w-full gap-2" size="lg">
+        <Button type="submit" className="w-full gap-2" size="lg" disabled={isSubmitting}>
           <Send className="w-4 h-4" />
-          Analyze with ROAD-GUARDIAN AI
+          {isSubmitting ? 'Saving...' : 'Analyze with ROAD-GUARDIAN AI'}
         </Button>
       </div>
     </form>

@@ -79,6 +79,81 @@ export interface AIVerdict {
   timestamp: Date;
 }
 
+// ==============================================
+// EXTENDED INTELLIGENCE MODE TYPES
+// ==============================================
+
+export interface ExtendedIntelligence {
+  // Pothole Age Debt: days open × risk factor - measures urgency debt accumulation
+  potholeAgeDebt: {
+    score: number;
+    daysOpen: number;
+    riskFactor: number;
+    interpretation: string;
+    citizenExplanation: string;
+  };
+  
+  // Accident Probability: risk of accident if not repaired in 7 days
+  accidentProbability: {
+    percentage: number;
+    confidenceLevel: 'high' | 'medium' | 'low';
+    factors: string[];
+    citizenExplanation: string;
+  };
+  
+  // Contractor Behavioral Pattern: analysis of contractor work patterns
+  contractorBehavioralPattern: {
+    pattern: 'reliable' | 'inconsistent' | 'declining' | 'problematic';
+    avgResponseDays: number;
+    qualityTrend: 'improving' | 'stable' | 'declining';
+    workloadStatus: 'underloaded' | 'optimal' | 'overloaded';
+    citizenExplanation: string;
+  };
+  
+  // Repair Confidence Level: likelihood of successful repair
+  repairConfidenceLevel: {
+    level: 'Low' | 'Medium' | 'High';
+    score: number; // 0-100
+    keyFactors: string[];
+    citizenExplanation: string;
+  };
+  
+  // AI-Recommended Repair Method
+  aiRecommendedRepairMethod: {
+    method: 'pothole_patching' | 'full_depth_repair' | 'surface_treatment' | 'road_resurfacing' | 'complete_reconstruction';
+    estimatedCost: number; // in INR
+    estimatedDuration: number; // in hours
+    materialRequired: string;
+    citizenExplanation: string;
+  };
+  
+  // Inter-Department Responsibility: which departments should coordinate
+  interDepartmentResponsibility: {
+    primaryDepartment: string;
+    supportingDepartments: string[];
+    coordinationLevel: 'single' | 'multi' | 'complex';
+    citizenExplanation: string;
+  };
+  
+  // Repair Warranty Confidence: expected warranty period in months
+  repairWarrantyConfidence: {
+    months: number;
+    confidence: 'high' | 'medium' | 'low';
+    factors: string[];
+    citizenExplanation: string;
+  };
+  
+  // City-Level Civic Health Index
+  cityLevelCivicHealthIndex: {
+    score: number; // 0-100
+    grade: 'A' | 'B' | 'C' | 'D' | 'F';
+    infrastructureHealth: number;
+    responseEfficiency: number;
+    citizenSatisfaction: number;
+    citizenExplanation: string;
+  };
+}
+
 export interface AdvancedPotholeAnalysis {
   potholeId: string;
   digitalIdentity: {
@@ -96,4 +171,6 @@ export interface AdvancedPotholeAnalysis {
   slaOptimization: SLAOptimization;
   financialLeakage: FinancialLeakage;
   aiVerdict: AIVerdict;
+  // Extended Intelligence Mode
+  extendedIntelligence: ExtendedIntelligence;
 }

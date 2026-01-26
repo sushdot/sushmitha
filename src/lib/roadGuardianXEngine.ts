@@ -1,5 +1,6 @@
 // ROAD-GUARDIAN X: Advanced AI Engine
 // Digital Identity, Durability Prediction, Blacklist Analysis, Citizen Trust Index, AI Verdict
+// EXTENDED INTELLIGENCE MODE: Age Debt, Accident Probability, Behavioral Patterns, Repair Methods
 
 import { Pothole, ContractorScore, AgentAnalysis } from '@/types/bharatGuardian';
 import {
@@ -11,7 +12,8 @@ import {
   SLAOptimization,
   FinancialLeakage,
   AIVerdict,
-  AdvancedPotholeAnalysis
+  AdvancedPotholeAnalysis,
+  ExtendedIntelligence
 } from '@/types/roadGuardianX';
 
 // ==============================================
@@ -742,6 +744,391 @@ export function runAIVerdictAgent(aiVerdict: AIVerdict): AgentAnalysis {
 }
 
 // ==============================================
+// EXTENDED INTELLIGENCE MODE AGENTS
+// ==============================================
+
+export function calculatePotholeAgeDebt(pothole: Pothole, criticalityScore: CriticalityScore): ExtendedIntelligence['potholeAgeDebt'] {
+  // Risk factor based on criticality (1.0 to 3.0)
+  const riskFactor = 1 + (criticalityScore.heatScore / 50);
+  const score = Math.round(pothole.daysOpen * riskFactor);
+  
+  let interpretation = 'Low urgency debt';
+  if (score >= 50) interpretation = 'Critical urgency debt - immediate action required';
+  else if (score >= 30) interpretation = 'High urgency debt - expedite repair';
+  else if (score >= 15) interpretation = 'Moderate urgency debt - monitor closely';
+  
+  return {
+    score,
+    daysOpen: pothole.daysOpen,
+    riskFactor: Math.round(riskFactor * 10) / 10,
+    interpretation,
+    citizenExplanation: `This pothole has accumulated ${score} "urgency points" - the longer it stays open and the more dangerous it is, the faster this number grows. A score above 30 means authorities should treat this as a priority.`
+  };
+}
+
+export function calculateAccidentProbability(pothole: Pothole, criticalityScore: CriticalityScore): ExtendedIntelligence['accidentProbability'] {
+  let baseProb = 5; // Base 5% probability
+  const factors: string[] = [];
+  
+  // Traffic density impact
+  if (criticalityScore.trafficDensity === 'high') {
+    baseProb += 25;
+    factors.push('High traffic volume');
+  } else if (criticalityScore.trafficDensity === 'medium') {
+    baseProb += 15;
+    factors.push('Moderate traffic');
+  }
+  
+  // Days open impact
+  if (pothole.daysOpen > 14) {
+    baseProb += 20;
+    factors.push('Pothole open for extended period');
+  } else if (pothole.daysOpen > 7) {
+    baseProb += 10;
+    factors.push('Week-old pothole');
+  }
+  
+  // Previous repairs indicate chronic problem
+  if (pothole.previousRepairs) {
+    baseProb += 15;
+    factors.push('Recurring problem area');
+  }
+  
+  // Monsoon increases risk
+  if (pothole.monsoonImpact) {
+    baseProb += 15;
+    factors.push('Monsoon visibility issues');
+  }
+  
+  // SLA breach indicates neglect
+  if (pothole.slaStatus === 'breached') {
+    baseProb += 10;
+    factors.push('Repair timeline exceeded');
+  }
+  
+  const percentage = Math.min(85, baseProb);
+  const confidenceLevel = factors.length >= 4 ? 'high' : factors.length >= 2 ? 'medium' : 'low';
+  
+  return {
+    percentage,
+    confidenceLevel,
+    factors,
+    citizenExplanation: `If this pothole isn't repaired in the next 7 days, there's approximately a ${percentage}% chance it could contribute to a vehicle accident or damage. ${percentage > 50 ? 'This is a serious risk that needs immediate attention.' : percentage > 30 ? 'This is a moderate risk that should be addressed soon.' : 'This is a lower risk, but repairs are still recommended.'}`
+  };
+}
+
+export function analyzeContractorBehavioralPattern(contractorScore: ContractorScore): ExtendedIntelligence['contractorBehavioralPattern'] {
+  const avgResponseDays = contractorScore.avgResponseTime;
+  const completionRate = (contractorScore.completed / Math.max(1, contractorScore.totalAssigned)) * 100;
+  
+  // Determine pattern
+  let pattern: 'reliable' | 'inconsistent' | 'declining' | 'problematic' = 'reliable';
+  if (contractorScore.score < 50) {
+    pattern = 'problematic';
+  } else if (contractorScore.repeatOccurrence > 15 || completionRate < 70) {
+    pattern = 'declining';
+  } else if (contractorScore.score < 70 || completionRate < 85) {
+    pattern = 'inconsistent';
+  }
+  
+  // Determine quality trend (simulated based on repeat occurrence)
+  let qualityTrend: 'improving' | 'stable' | 'declining' = 'stable';
+  if (contractorScore.repeatOccurrence > 15) qualityTrend = 'declining';
+  else if (contractorScore.repeatOccurrence < 5 && contractorScore.score >= 80) qualityTrend = 'improving';
+  
+  // Workload status
+  let workloadStatus: 'underloaded' | 'optimal' | 'overloaded' = 'optimal';
+  if (contractorScore.totalAssigned > 150) workloadStatus = 'overloaded';
+  else if (contractorScore.totalAssigned < 30) workloadStatus = 'underloaded';
+  
+  const patternDescriptions = {
+    reliable: 'This contractor consistently delivers quality repairs on time',
+    inconsistent: 'This contractor shows mixed results - some good, some concerning',
+    declining: 'This contractor\'s performance has been getting worse over time',
+    problematic: 'This contractor has serious performance issues that need immediate review'
+  };
+  
+  return {
+    pattern,
+    avgResponseDays,
+    qualityTrend,
+    workloadStatus,
+    citizenExplanation: `${patternDescriptions[pattern]}. They typically respond in ${avgResponseDays.toFixed(1)} days and their work quality trend is ${qualityTrend}. ${workloadStatus === 'overloaded' ? 'They may be handling too many projects at once.' : ''}`
+  };
+}
+
+export function calculateRepairConfidenceLevel(
+  pothole: Pothole, 
+  contractorScore: ContractorScore, 
+  durabilityPrediction: DurabilityPrediction
+): ExtendedIntelligence['repairConfidenceLevel'] {
+  let score = 50; // Base score
+  const keyFactors: string[] = [];
+  
+  // Contractor quality impact
+  if (contractorScore.score >= 80) {
+    score += 25;
+    keyFactors.push('High-performing contractor');
+  } else if (contractorScore.score >= 60) {
+    score += 10;
+    keyFactors.push('Average contractor performance');
+  } else {
+    score -= 15;
+    keyFactors.push('Contractor performance concerns');
+  }
+  
+  // Previous repairs impact
+  if (pothole.previousRepairs) {
+    score -= 20;
+    keyFactors.push('Previous repair failed');
+  } else {
+    score += 10;
+    keyFactors.push('First-time repair');
+  }
+  
+  // Durability factors
+  if (durabilityPrediction.factors.materialQuality === 'premium') {
+    score += 15;
+    keyFactors.push('Premium materials expected');
+  }
+  
+  // Monsoon impact
+  if (pothole.monsoonImpact) {
+    score -= 10;
+    keyFactors.push('Monsoon conditions challenging');
+  }
+  
+  score = Math.max(10, Math.min(95, score));
+  
+  const level: 'Low' | 'Medium' | 'High' = score >= 70 ? 'High' : score >= 45 ? 'Medium' : 'Low';
+  
+  return {
+    level,
+    score,
+    keyFactors,
+    citizenExplanation: `We have ${level.toLowerCase()} confidence that this repair will be successful and last long-term. ${level === 'High' ? 'The conditions and contractor are favorable.' : level === 'Medium' ? 'There are some concerns but the repair should work.' : 'There are significant concerns - enhanced monitoring recommended.'}`
+  };
+}
+
+export function recommendRepairMethod(pothole: Pothole, criticalityScore: CriticalityScore): ExtendedIntelligence['aiRecommendedRepairMethod'] {
+  let method: ExtendedIntelligence['aiRecommendedRepairMethod']['method'] = 'pothole_patching';
+  let estimatedCost = 5000;
+  let estimatedDuration = 2;
+  let materialRequired = 'Cold mix asphalt';
+  
+  // Determine based on severity and road type
+  const digitalIdentitySeverity = pothole.slaStatus === 'breached' && pothole.daysOpen > 14 ? 'critical' : 
+                                   pothole.slaStatus === 'breached' ? 'severe' : 
+                                   pothole.daysOpen > 5 ? 'moderate' : 'minor';
+  
+  const isHighway = pothole.location.toLowerCase().includes('highway') || 
+                    pothole.location.toLowerCase().includes('express');
+  
+  if (pothole.previousRepairs && pothole.daysSinceLastRepair && pothole.daysSinceLastRepair < 180) {
+    // Recurring pothole needs major fix
+    method = 'full_depth_repair';
+    estimatedCost = 25000;
+    estimatedDuration = 8;
+    materialRequired = 'Hot mix asphalt with base course repair';
+  } else if (isHighway && (digitalIdentitySeverity === 'critical' || digitalIdentitySeverity === 'severe')) {
+    method = 'road_resurfacing';
+    estimatedCost = 150000;
+    estimatedDuration = 24;
+    materialRequired = 'Dense bituminous macadam (DBM) overlay';
+  } else if (digitalIdentitySeverity === 'critical') {
+    method = 'full_depth_repair';
+    estimatedCost = 25000;
+    estimatedDuration = 8;
+    materialRequired = 'Hot mix asphalt with compaction';
+  } else if (digitalIdentitySeverity === 'severe' || criticalityScore.heatScore > 60) {
+    method = 'surface_treatment';
+    estimatedCost = 12000;
+    estimatedDuration = 4;
+    materialRequired = 'Hot mix asphalt surface course';
+  } else {
+    method = 'pothole_patching';
+    estimatedCost = 5000;
+    estimatedDuration = 2;
+    materialRequired = 'Cold mix asphalt patching';
+  }
+  
+  const methodDescriptions = {
+    pothole_patching: 'Simple filling of the pothole with patching material - quick and cost-effective for minor issues',
+    full_depth_repair: 'Complete removal and reconstruction of the road section - best for recurring problems',
+    surface_treatment: 'Applying a new surface layer over the affected area - balances quality and speed',
+    road_resurfacing: 'Laying a new road surface over a larger area - for seriously damaged stretches',
+    complete_reconstruction: 'Full road rebuild from foundation - for areas with structural failure'
+  };
+  
+  return {
+    method,
+    estimatedCost,
+    estimatedDuration,
+    materialRequired,
+    citizenExplanation: `AI recommends "${method.replace(/_/g, ' ').toUpperCase()}": ${methodDescriptions[method]}. Estimated cost: ₹${estimatedCost.toLocaleString('en-IN')}. Expected completion: ${estimatedDuration} hours.`
+  };
+}
+
+export function determineInterDepartmentResponsibility(pothole: Pothole): ExtendedIntelligence['interDepartmentResponsibility'] {
+  const location = pothole.location.toLowerCase();
+  let primaryDepartment = 'Municipal Corporation - Roads Division';
+  const supportingDepartments: string[] = [];
+  let coordinationLevel: 'single' | 'multi' | 'complex' = 'single';
+  
+  // Determine primary department based on road type
+  if (location.includes('nh-') || location.includes('national highway')) {
+    primaryDepartment = 'National Highways Authority of India (NHAI)';
+    supportingDepartments.push('State PWD');
+    coordinationLevel = 'multi';
+  } else if (location.includes('sh-') || location.includes('state highway')) {
+    primaryDepartment = 'State Public Works Department (PWD)';
+    supportingDepartments.push('District Administration');
+    coordinationLevel = 'multi';
+  } else if (location.includes('flyover') || location.includes('bridge')) {
+    primaryDepartment = 'Bridges & Structural Division';
+    supportingDepartments.push('Traffic Police', 'Municipal Corporation');
+    coordinationLevel = 'complex';
+  }
+  
+  // Add traffic police for high-traffic areas
+  if (location.includes('junction') || location.includes('crossing') || location.includes('signal')) {
+    if (!supportingDepartments.includes('Traffic Police')) {
+      supportingDepartments.push('Traffic Police');
+    }
+    coordinationLevel = coordinationLevel === 'single' ? 'multi' : coordinationLevel;
+  }
+  
+  // Water/drainage issues
+  if (pothole.monsoonImpact) {
+    supportingDepartments.push('Storm Water Drainage Department');
+    coordinationLevel = coordinationLevel === 'single' ? 'multi' : 'complex';
+  }
+  
+  return {
+    primaryDepartment,
+    supportingDepartments,
+    coordinationLevel,
+    citizenExplanation: `${primaryDepartment} is responsible for fixing this. ${supportingDepartments.length > 0 ? `They need to work with: ${supportingDepartments.join(', ')}.` : ''} ${coordinationLevel === 'complex' ? 'This requires coordination between multiple government bodies, which may take longer.' : coordinationLevel === 'multi' ? 'A couple of departments need to work together on this.' : 'This is a straightforward single-department job.'}`
+  };
+}
+
+export function calculateRepairWarrantyConfidence(
+  durabilityPrediction: DurabilityPrediction, 
+  contractorScore: ContractorScore
+): ExtendedIntelligence['repairWarrantyConfidence'] {
+  // Base warranty expectation
+  let months = 12;
+  const factors: string[] = [];
+  
+  // Adjust based on expected lifespan
+  if (durabilityPrediction.expectedLifespanDays > 540) { // 1.5 years
+    months = 18;
+    factors.push('Long expected lifespan');
+  } else if (durabilityPrediction.expectedLifespanDays > 365) {
+    months = 12;
+    factors.push('Standard lifespan expected');
+  } else {
+    months = 6;
+    factors.push('Shorter lifespan predicted');
+  }
+  
+  // Contractor reliability
+  if (contractorScore.repeatOccurrence < 5) {
+    months += 6;
+    factors.push('Low repeat failure rate');
+  } else if (contractorScore.repeatOccurrence > 15) {
+    months -= 3;
+    factors.push('High repeat failures');
+  }
+  
+  // Material quality
+  if (durabilityPrediction.factors.materialQuality === 'premium') {
+    months += 6;
+    factors.push('Premium materials used');
+  }
+  
+  months = Math.max(3, Math.min(24, months));
+  
+  const confidence: 'high' | 'medium' | 'low' = 
+    durabilityPrediction.confidenceLevel === 'high' && contractorScore.score >= 70 ? 'high' :
+    durabilityPrediction.confidenceLevel === 'low' || contractorScore.score < 50 ? 'low' : 'medium';
+  
+  return {
+    months,
+    confidence,
+    factors,
+    citizenExplanation: `We expect this repair to last at least ${months} months before needing attention. Our confidence in this estimate is ${confidence}. ${confidence === 'low' ? 'You may want to report any issues early.' : confidence === 'high' ? 'This should be a durable repair.' : 'Keep an eye on this repair over time.'}`
+  };
+}
+
+export function calculateCityLevelCivicHealthIndex(
+  pothole: Pothole,
+  citizenTrustIndex: CitizenTrustIndex,
+  allPotholes: Pothole[]
+): ExtendedIntelligence['cityLevelCivicHealthIndex'] {
+  const cityPotholes = allPotholes.filter(p => p.city === pothole.city);
+  
+  // Infrastructure health: inverse of breach rate
+  const breachedCount = cityPotholes.filter(p => p.slaStatus === 'breached').length;
+  const infrastructureHealth = Math.round(100 - (breachedCount / Math.max(1, cityPotholes.length)) * 100);
+  
+  // Response efficiency: based on average days open
+  const avgDaysOpen = cityPotholes.reduce((sum, p) => sum + p.daysOpen, 0) / Math.max(1, cityPotholes.length);
+  const responseEfficiency = Math.round(Math.max(0, 100 - (avgDaysOpen * 5)));
+  
+  // Citizen satisfaction from trust index
+  const citizenSatisfaction = citizenTrustIndex.factors.citizenSatisfaction;
+  
+  // Calculate overall score
+  const score = Math.round((infrastructureHealth * 0.4) + (responseEfficiency * 0.3) + (citizenSatisfaction * 0.3));
+  
+  // Grade
+  let grade: 'A' | 'B' | 'C' | 'D' | 'F' = 'C';
+  if (score >= 85) grade = 'A';
+  else if (score >= 70) grade = 'B';
+  else if (score >= 55) grade = 'C';
+  else if (score >= 40) grade = 'D';
+  else grade = 'F';
+  
+  const gradeDescriptions = {
+    A: 'Excellent - This city is doing a great job maintaining roads',
+    B: 'Good - The city responds well to most road issues',
+    C: 'Average - There\'s room for improvement in road maintenance',
+    D: 'Below Average - Significant improvements needed',
+    F: 'Poor - Major overhaul of road maintenance required'
+  };
+  
+  return {
+    score,
+    grade,
+    infrastructureHealth,
+    responseEfficiency,
+    citizenSatisfaction,
+    citizenExplanation: `${pothole.city} receives a Grade ${grade} (${score}/100) for civic road health. ${gradeDescriptions[grade]}. Infrastructure: ${infrastructureHealth}%, Response Speed: ${responseEfficiency}%, Citizen Satisfaction: ${citizenSatisfaction}%.`
+  };
+}
+
+export function computeExtendedIntelligence(
+  pothole: Pothole,
+  contractorScore: ContractorScore,
+  durabilityPrediction: DurabilityPrediction,
+  criticalityScore: CriticalityScore,
+  citizenTrustIndex: CitizenTrustIndex,
+  allPotholes: Pothole[]
+): ExtendedIntelligence {
+  return {
+    potholeAgeDebt: calculatePotholeAgeDebt(pothole, criticalityScore),
+    accidentProbability: calculateAccidentProbability(pothole, criticalityScore),
+    contractorBehavioralPattern: analyzeContractorBehavioralPattern(contractorScore),
+    repairConfidenceLevel: calculateRepairConfidenceLevel(pothole, contractorScore, durabilityPrediction),
+    aiRecommendedRepairMethod: recommendRepairMethod(pothole, criticalityScore),
+    interDepartmentResponsibility: determineInterDepartmentResponsibility(pothole),
+    repairWarrantyConfidence: calculateRepairWarrantyConfidence(durabilityPrediction, contractorScore),
+    cityLevelCivicHealthIndex: calculateCityLevelCivicHealthIndex(pothole, citizenTrustIndex, allPotholes)
+  };
+}
+
+// ==============================================
 // MAIN ADVANCED ANALYSIS FUNCTION
 // ==============================================
 export function runAdvancedAnalysis(
@@ -769,6 +1156,16 @@ export function runAdvancedAnalysis(
     criticalityScore, 
     financialLeakage
   );
+  
+  // Compute Extended Intelligence
+  const extendedIntelligence = computeExtendedIntelligence(
+    pothole,
+    contractorScore,
+    durabilityPrediction,
+    criticalityScore,
+    citizenTrustIndex,
+    allPotholes
+  );
 
   const advancedAnalysis: AdvancedPotholeAnalysis = {
     potholeId: pothole.id,
@@ -780,7 +1177,8 @@ export function runAdvancedAnalysis(
     criticalityScore,
     slaOptimization,
     financialLeakage,
-    aiVerdict
+    aiVerdict,
+    extendedIntelligence
   };
 
   const advancedAgentAnalyses: AgentAnalysis[] = [
